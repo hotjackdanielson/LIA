@@ -1,0 +1,115 @@
+#include <LiquidCrystal.h>
+
+int sensor = A0;
+int incButton = 2;
+int decButton = 3;
+int actuator = 6;
+int PV = 0;
+int setPoint = 0;
+int CO = 0;
+int Error = 0; // declare variable to store the error
+int button1 = 4;
+int button2 = 5;
+int displayIndex = 0;
+float pGain = 2.0; //declare the P Gain Variable
+
+LiquidCrystal lcd(12, 11, 10, 9, 8, 7);
+
+void setup() {
+  // put your setup code here, to run once:
+  pinMode(actuator, OUTPUT);
+  pinMode(incButton, INPUT_PULLUP);
+  pinMode(decButton, INPUT_PULLUP);
+  pinMode(button1, INPUT_PULLUP);
+  pinMode(button2, INPUT_PULLUP);
+  Serial.begin(9600);
+  lcd.begin(16, 2);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  PV = analogRead(sensor); // read the value from the sensor the value will be between 0-1024
+  Error = setPoint-PV; //Error is SP - PV
+  CO = pGain*Error; // multiply the Error by the P Gain
+
+  if (CO>255)
+  {
+    CO = 255; // putting Cap on the max value to not exceed 255
+  }
+if (CO<0)
+{
+  CO = 0; // Putting Cap on the min Value ot to be less than 0
+}
+analogWrite(actuator, CO); // writing the CO to the actuator
+
+if (digitalRead(incButton) == LOW) {
+    if (displayIndex == 0) setPoint += 10;
+    else if (displayIndex == 1) CO = 255;
+    else if (displayIndex == 2) PV += 10;
+    else if (displayIndex == 3) Error += 10;
+    else if (displayIndex == 4) pGain += 1.0;
+    delay(200);
+  } else if (digitalRead(decButton) == LOW) {
+    if (displayIndex == 0) setPoint -= 10;
+    else if (displayIndex == 1) CO = 0;
+    else if (displayIndex == 2) PV -= 10;
+    else if (displayIndex == 3) Error -= 10;
+    else if (displayIndex == 4) pGain -= 1.0;
+    delay(200);
+  }
+  
+  if (digitalRead(button1) == LOW) {
+    displayIndex++;
+    if (displayIndex > 4) displayIndex = 0;
+    delay(200);
+  }
+  
+  if (digitalRead(button2) == LOW) {
+    displayIndex--;
+    if (displayIndex < 0) displayIndex = 4;
+    delay(200);
+  }
+  
+  switch (displayIndex) {
+    case 0:
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("SP= ");
+      lcd.print(setPoint);
+      break;
+    case 1:
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("CO= ");
+      lcd.print(CO);
+      break;
+    case 2:
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("PV= ");
+      lcd.print(PV);
+      break;
+    case 3:
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Error= ");
+      lcd.print(Error);
+      break;
+    case 4:
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("PGain= ");
+      lcd.print(pGain);
+      break;
+  }
+
+Serial.print("SP = "); 
+Serial.print(setPoint);
+Serial.print("\t CO = ");
+Serial.print(CO);
+Serial.print("\t PV = ");
+Serial.print(PV);
+Serial.print("\t P Gain = ");
+Serial.print(pGain);
+Serial.println();
+}
